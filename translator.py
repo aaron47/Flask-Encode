@@ -32,9 +32,9 @@ class TunisianTranslator:
         "trikou": "t-shirt",
     }
 
-    def translate(self, tunisian_text: str) -> str:
-        words: list[str] = tunisian_text.split()
-        translated_words: list[str] = []
+    def translate(self, tunisian_text):
+        words = tunisian_text.split()
+        translated_words = []
 
         for word in words:
             key = self.__find_best_match(word)
@@ -45,12 +45,11 @@ class TunisianTranslator:
 
         return " ".join(translated_words)
 
-    def __find_best_match(self, tunisian_text: str) -> str | None:
-        matches: list = get_close_matches(
+    def __find_best_match(self, tunisian_text):
+        matches = get_close_matches(
             tunisian_text, self.__translation_dict.keys(), n=1, cutoff=0.7
         )
         return matches[0] if matches else None
-
 
 
 translator = TunisianTranslator()

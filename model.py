@@ -3,8 +3,9 @@ import torch
 import torch.nn.functional as F
 from torch.types import Number
 
+
 class AllMpnetBaseV2:
-    def __init__(self) -> None:
+    def __init__(self):
         self.sentences = ["This is a sentence", "This is another sentence"]
         self.tokenizer = AutoTokenizer.from_pretrained(
             "sentence-transformers/all-mpnet-base-v2"
@@ -14,9 +15,7 @@ class AllMpnetBaseV2:
         )
 
     # Perform cosine similarity between 2 sentences, and return it
-    def perform_cosine_similarity_between_2_sentences(
-        self, sentences: list[str] | None = None
-    ) -> Number:
+    def perform_cosine_similarity_between_2_sentences(self, sentences):
         if sentences is None:
             sentences = self.sentences
 
@@ -44,14 +43,12 @@ class AllMpnetBaseV2:
         (max_similarity, best_pair)
     """
 
-    def perform_cosine_similarity_and_return_highest(
-        self, sentences: list[str]
-    ) -> tuple[Number, tuple[str | None, str | None]]:
+    def perform_cosine_similarity_and_return_highest(self, sentences):
         sentence_embeddings = self.__encode_sentences_and_normalise(sentences)
 
         # Initialize variables to track the highest similarity and corresponding sentences
         max_similarity = -1  # Start with the lowest possible similarity
-        best_pair: tuple[str | None, str | None] = (None, None)
+        best_pair = (None, None)
 
         # Calculate pair wise similarity
         num_sentences = len(sentences)
@@ -70,7 +67,7 @@ class AllMpnetBaseV2:
 
         return (max_similarity, best_pair)
 
-    def encode_sentence_and_normalise(self, sentence: str) -> list:
+    def encode_sentence_and_normalise(self, sentence):
         # Tokenize the sentence
         encoded_input = self.tokenizer(
             sentence, padding=True, truncation=True, return_tensors="pt"
@@ -96,9 +93,7 @@ class AllMpnetBaseV2:
         function that effectively computes the average of the token embeddings in each sentence, while ignoring padding tokens, resulting in a single embedding vector that represents the entire sentence. This is a common technique used in NLP tasks to get a fixed-size sentence representation from variable-length sentences.
     """
 
-    def __mean_pooling(
-        self, model_output: torch.Tensor, attention_mask
-    ) -> torch.Tensor:
+    def __mean_pooling(self, model_output, attention_mask):
         # First element of the model output contains all token embeddings
         token_embeddings = model_output[0]
         """
@@ -143,9 +138,7 @@ class AllMpnetBaseV2:
         performs mean pooling on them, then returns them normalised.
     """
 
-    def __encode_sentences_and_normalise(
-        self, sentences: list[str] | None
-    ) -> torch.Tensor:
+    def __encode_sentences_and_normalise(self, sentences):
         # Tokenize sentences
         encoded_input = self.tokenizer(sentences, padding=True, truncation=True, return_tensors="pt")  # type: ignore
 
