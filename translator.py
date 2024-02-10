@@ -1,4 +1,6 @@
 from difflib import get_close_matches
+import re
+from googletrans import Translator
 
 
 class TunisianTranslator:
@@ -28,12 +30,28 @@ class TunisianTranslator:
         "7amra": "rouge",
         "ak7al": "noir",
         "ka7la": "noir",
+        "a5dhar": "vert",
+        "5adhra": "vert",
+        "": "",
         "serwel": "pantalon",
         "trikou": "t-shirt",
     }
 
     def translate(self, tunisian_text):
+        words = []
+
+        # Check if the text is non-Latin and attempt translation if necessary
+        if not self.is_latin(tunisian_text):
+            try:
+                translator = Translator()
+                tunisian_text = translator.translate(tunisian_text, dest="fr").text
+            except Exception as e:
+                # Handle translation failure, possibly log the error or use a fallback
+                print(f"Translation failed: {e}")
+                return "Translation error"
+
         words = tunisian_text.split()
+
         translated_words = []
 
         for word in words:
@@ -44,6 +62,11 @@ class TunisianTranslator:
                 translated_words.append(word)
 
         return " ".join(translated_words)
+
+    def is_latin(self, s):
+        # This regex matches any character that is not in the basic Latin or Latin-1 Supplement range.
+        # You might need to adjust the regex to include other Latin ranges depending on your needs.
+        return not re.search(r"[^\u0000-\u00FF]", s)
 
     def __find_best_match(self, tunisian_text):
         matches = get_close_matches(
