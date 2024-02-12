@@ -32,8 +32,19 @@ class TunisianTranslator:
         "ka7la": "noir",
         "a5dhar": "vert",
         "5adhra": "vert",
-        "": "",
+        "lamba": "lampe",
+        "abyedh": "blanche",
+        "bidha": "blanche",
         "serwel": "pantalon",
+        "shaar": "cheveux",
+        "sh3ar": "cheveux",
+        "7did": "metal",
+        "bdan": "corps",
+        "hommes": "rjel",
+        "femmes": "nse",
+        "mtarcha9": "abîmés",
+        "mahlouk": "abîmés",
+        "3ilej": "traitement",
         "trikou": "t-shirt",
     }
 
@@ -41,7 +52,7 @@ class TunisianTranslator:
         words = []
 
         # Check if the text is non-Latin and attempt translation if necessary
-        if not self.is_latin(tunisian_text):
+        if not self.__is_latin(tunisian_text):
             try:
                 translator = Translator()
                 tunisian_text = translator.translate(tunisian_text, dest="fr").text
@@ -63,7 +74,7 @@ class TunisianTranslator:
 
         return " ".join(translated_words)
 
-    def is_latin(self, s):
+    def __is_latin(self, s):
         # This regex matches any character that is not in the basic Latin or Latin-1 Supplement range.
         # You might need to adjust the regex to include other Latin ranges depending on your needs.
         return not re.search(r"[^\u0000-\u00FF]", s)
