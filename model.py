@@ -5,7 +5,7 @@ from torch.types import Number
 
 
 class AllMpnetBaseV2:
-    def __init__(self):
+    def __init__(self) -> None:
         self.sentences = ["This is a sentence", "This is another sentence"]
         self.tokenizer = AutoTokenizer.from_pretrained(
             "sentence-transformers/all-mpnet-base-v2"
@@ -14,8 +14,10 @@ class AllMpnetBaseV2:
             "sentence-transformers/all-mpnet-base-v2"
         )
 
-    # Perform cosine similarity between 2 sentences, and return it
-    def perform_cosine_similarity_between_2_sentences(self, sentences):
+    # Effectuez une similarité cosinus entre 2 phrases et la retourner
+    def perform_cosine_similarity_between_2_sentences(
+        self, sentences: list[str] | None = None
+    ) -> Number:
         if sentences is None:
             sentences = self.sentences
 
@@ -24,12 +26,12 @@ class AllMpnetBaseV2:
 
         sentence_embeddings = self.__encode_sentences_and_normalise(sentences)
 
-        # Convert all sentence embeddings to the same dimension using .unsqueeze(0)
+        # Convertir toutes les intégrations de phrases dans la même dimension à l'aide de .unsqueeze(0)
         same_dim_sentence_embeddings = [
             sentence.unsqueeze(0) for sentence in sentence_embeddings
         ]
 
-        # Perofrm cosine similarity
+        # Performer la similarité cosinus
         similarity = F.cosine_similarity(
             same_dim_sentence_embeddings[0], same_dim_sentence_embeddings[1]
         )
@@ -37,121 +39,143 @@ class AllMpnetBaseV2:
         return similarity.item()
 
     """
-        Performs cosine similarity between pairs of sentences in an array of sentences, use if you have more than 2 sentences you want to compare.
-        Returns a tuple of the highest similarity, and the best pair of sentences that resemble each other
+        Effectue une similarité cosinus entre des paires de phrases dans un tableau de phrases, à utiliser si vous souhaitez comparer plus de 2 phrases.
+        Renvoie le tuple présentant la plus grande similarité et la meilleure paire de phrases qui se ressemblent
 
         (max_similarity, best_pair)
     """
 
-    def perform_cosine_similarity_and_return_highest(self, sentences):
+    def perform_cosine_similarity_and_return_highest(
+        self, sentences: list[str]
+    ) -> tuple[Number, tuple[str | None, str | None]]:
         sentence_embeddings = self.__encode_sentences_and_normalise(sentences)
 
-        # Initialize variables to track the highest similarity and corresponding sentences
+        # Initialisez les variables pour suivre la similarité la plus élevée et les phrases correspondantes
         max_similarity = -1  # Start with the lowest possible similarity
-        best_pair = (None, None)
+        best_pair: tuple[str | None, str | None] = (None, None)
 
-        # Calculate pair wise similarity
+        # Calculer la similarité par paire
         num_sentences = len(sentences)
         for i in range(num_sentences):
-            for j in range(i + 1, num_sentences):  # Compare each pair only once
-                # Convert both of the embeddings tensors to the same dimension and perform cosine similarity
+            for j in range(
+                i + 1, num_sentences
+            ):  # Comparez chaque paire une seule fois
+                # Convertir les deux tenseurs d'intégration dans la même dimension et effectuez une similarité cosinus
                 similarity = F.cosine_similarity(
                     sentence_embeddings[i].unsqueeze(0),
                     sentence_embeddings[j].unsqueeze(0),
                 ).item()
 
-                # Compare similarities and reassign if higher
+                # Comparer les similarités et attribuer si elles sont supérieures
                 if similarity > max_similarity:
                     max_similarity = similarity
                     best_pair = (sentences[i], sentences[j])
 
         return (max_similarity, best_pair)
 
-    def encode_sentence_and_normalise(self, sentence):
-        # Tokenize the sentence
+    def encode_sentence_and_normalise(self, sentence: str) -> list:
+        """
+        La tokenisation est le processus de conversion d'une séquence de caractères en une séquence de jetons(tokens). En PNL, un jeton(token) représente généralement un mot, mais il peut également représenter des sous-mots, des caractères ou d'autres unités, selon le tokeniseur. Ce processus est nécessaire car les modèles d'apprentissage automatique ne peuvent pas comprendre le texte brut. Au lieu de cela, ils travaillent avec des représentations numériques de jetons.
+
+        Le remplissage(padding) est appliqué pour garantir que toutes les séquences d'un lot ont la même longueur, ce qui est une exigence pour de nombreuses architectures de réseaux neuronaux. Des jetons de remplissage sont ajoutés à la fin de la séquence pour étendre sa longueur jusqu'à un maximum prédéfini.
+        """
         encoded_input = self.tokenizer(
             sentence, padding=True, truncation=True, return_tensors="pt"
         )
 
-        # Compute the token embeddings
+        # Calculer les intégrations de jetons
         with torch.no_grad():
             model_output = self.model(**encoded_input)
 
-        # Perform Pooling
+        # Performer le "Mean Pooling"
         sentence_embedding = self.__mean_pooling(
             model_output, attention_mask=encoded_input["attention_mask"]
         )
 
-        # Normalise embeddings
+        # Noramliser les intégrations
         sentence_embedding = F.normalize(sentence_embedding, p=2, dim=1)
 
-        # Squeeze the tensor into a one dimensional tensor, then return it as a list
+        # Presser(.squeeze()) le tenseur dans un tenseur unidimensionnel, puis le retourner sous forme de liste
         return sentence_embedding.squeeze().tolist()
 
     """
-        Mean Pooling - Take attention mask into account for correct averaging:
-        function that effectively computes the average of the token embeddings in each sentence, while ignoring padding tokens, resulting in a single embedding vector that represents the entire sentence. This is a common technique used in NLP tasks to get a fixed-size sentence representation from variable-length sentences.
+        Mean Pooling (Regroupement de moyennes) - Tenir compte du masque d'attention (attention_mask) pour une moyenne correcte:
+        fonction qui calcule efficacement la moyenne des intégrations de jetons dans chaque phrase, tout en ignorant les jetons de remplissage, ce qui donne un seul vecteur d'intégration qui représente la phrase entière. Il s'agit d'une technique courante utilisée dans les tâches de PNL pour obtenir une représentation de phrase de taille fixe à partir de phrases de longueur variable.
+
+        S'applique au regroupement de moyennes à l'output du modèle, créant une intégration de phrase de taille fixe.
+
+        L'opération de regroupement moyen ne prend en compte que les jetons sans remplissage dans la phrase, en utilisant un masque d'attention. Le masque d'attention a la même longueur que la séquence de jetons, « 1 » indiquant les jetons sans remplissage et « 0 » pour les jetons de remplissage. Cela garantit que l'incorporation de phrase résultante est calculée uniquement à partir du contenu significatif de la séquence.
+
+        Args:
+            model_output (torch.Tensor): L'output du modèle, contenant des intégrations de jetons.
+            attention_mask: Un masque qui fait la différence entre le contenu et les jetons de remplissage.
+
+        Returns:
+            torch.Tensor: L'intégration de phrases regroupées en moyenne représentant la totalité de la séquence d'entrée.
     """
 
-    def __mean_pooling(self, model_output, attention_mask):
-        # First element of the model output contains all token embeddings
+    def __mean_pooling(
+        self, model_output: torch.Tensor, attention_mask
+    ) -> torch.Tensor:
+        # Le premier élément de l'output' du modèle contient toutes les intégrations de jetons
         token_embeddings = model_output[0]
         """
             attention_mask.unsqueeze(-1): 
-                This adds an extra dimension to the attention mask, 
-                transforming it from a 2D tensor of shape [batch_size, sequence_length] 
-                to a 3D tensor of shape [batch_size, sequence_length, 1].
+                une dimension supplémentaire au masque d'attention,
+                le transformer à partir d'un tenseur de forme 2D [batch_size, séquence_length]
+                à un tenseur 3D de forme [batch_size, sequence_length, 1].
 
             .expand(token_embeddings.size()): 
-                This expands the attention mask to match the size of token_embeddings. 
-                The mask is now of the same shape as the token embeddings [batch_size, sequence_length, embedding_size].
+                Cela élargit le masque d'attention pour qu'il corresponde à la taille de token_embeddings (intégrations de jetons).
+                Le masque a désormais la même forme que les intégrations de jetons [batch_size, séquence_length, embedding_size].
 
             .float(): 
-                Converts the mask to a float tensor. This is necessary because the mask is usually of type int (0s and 1s), but needs to be in floating-point format for subsequent multiplication with the embeddings.
-        """
+                Convertit le masque en tenseur des réels(floats). Ceci est nécessaire car le masque est généralement de type int (0 et 1), mais doit être au format à virgule flottante pour une multiplication ultérieure avec les intégrations.
+            """
         input_mask_expanded = (
             attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
         )
 
         """
         token_embeddings * input_mask_expanded: 
-            This multiplies the embeddings by the mask. 
-            For tokens that are padding (mask value 0), 
-            their embeddings become zero and don't contribute to the sum.
+            Cela multiplie les intégrations par le masque.
+            Pour les jetons qui remplissent (valeur de masque 0),
+            leurs plongements deviennent nuls et ne contribuent pas à la somme.
             
         torch.sum(..., 1): 
-            Sums the embeddings across the sequence length dimension, 
-            resulting in a single vector for each sentence in the batch.
+            Additionne les plongements sur la dimension de longueur de séquence,
+            ce qui donne un seul vecteur pour chaque phrase du lot(batch).
 
         torch.clamp(..., min=1e-9):
-            Ensures that the divisor is not zero (which can happen if a sentence consists entirely of padding tokens). It sets a minimum value to avoid division by zero.
+            Garantit que le diviseur n'est pas nul (ce qui peut arriver si une phrase est entièrement composée de jetons de remplissage). Il fixe une valeur minimale pour éviter la division par zéro.
 
         input_mask_expanded.sum(1): 
-            Sums the mask across the sequence length, giving the number of actual (non-padding) tokens in each sentence.
+            Fait la somme du masque sur toute la longueur de la séquence, donnant le nombre de jetons réels (sans remplissage) dans chaque phrase.
         """
         return torch.sum(token_embeddings * input_mask_expanded, 1) / torch.clamp(
             input_mask_expanded.sum(1), min=1e-9
         )
 
     """
-        Takes an input of a list of sentences, encodes them into a tensor(vector) of 768 dimensions, 
-        performs mean pooling on them, then returns them normalised.
+        Prend en paramétre une liste de phrases, les code dans un tenseur(vecteur) de 768 dimensions,
+        effectue une regroupement de moyennes sur eux, puis les renvoie normalisés.
     """
-
-    def __encode_sentences_and_normalise(self, sentences):
-        # Tokenize sentences
+    def __encode_sentences_and_normalise(
+        self, sentences: list[str] | None
+    ) -> torch.Tensor:
+        # Tokeniser les phrases
         encoded_input = self.tokenizer(sentences, padding=True, truncation=True, return_tensors="pt")  # type: ignore
 
-        # Compute token embeddings
+        # Calculer les intégrations de jetons
         with torch.no_grad():
             model_output = self.model(**encoded_input)
 
-        # Perform Pooling
+        # Performer la regroupement de moyennes
         sentence_embeddings = self.__mean_pooling(
             model_output=model_output, attention_mask=encoded_input["attention_mask"]
         )
 
-        # Normalise the embeddings
+        # Normaliser les intégrations
         sentence_embeddings = F.normalize(sentence_embeddings, p=2, dim=1)
 
         return sentence_embeddings
