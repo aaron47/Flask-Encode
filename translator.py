@@ -47,21 +47,21 @@ class TunisianTranslator:
         "3ilej": "traitement",
         "lahwa": "traitement",
         "trikou": "t-shirt",
+        "bon": "9ahwa",
     }
 
-    def translate(self, tunisian_text):
+    def translate(self, text):
         words = []
-
         # Vérifiez si le texte n'est pas latin et essayez de le traduire si nécessaire
-        if not self.__is_latin(tunisian_text):
+        if not self.__is_latin(text):
             try:
                 translator = Translator()
-                tunisian_text = translator.translate(tunisian_text, dest="fr").text
+                text = translator.translate(text, dest="fr").text
             except Exception as e:
                 print(f"Translation failed: {e}")
                 return "Translation error"
 
-        words = tunisian_text.split()
+        words = text.split()
 
         translated_words = []
 

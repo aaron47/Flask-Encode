@@ -179,6 +179,30 @@ class AllMpnetBaseV2:
         sentence_embeddings = F.normalize(sentence_embeddings, p=2, dim=1)
 
         return sentence_embeddings
+    
+    def __max_pooling(self, model_output: torch.Tensor, attention_mask) -> torch.Tensor:
+        token_embeddings = model_output[0]
+        input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
+
+        # Set embeddings of padding tokens to a very small value
+        masked_embeddings = token_embeddings * input_mask_expanded
+        masked_embeddings[masked_embeddings == 0] = -1e9
+
+        # Compute the max across the sequence length dimension
+        max_pooled = torch.max(masked_embeddings, dim=1)[0]
+        return max_pooled
+
+    def __min_pooling(self, model_output: torch.Tensor, attention_mask) -> torch.Tensor:
+        token_embeddings = model_output[0]
+        input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
+
+        # Set embeddings of padding tokens to a very large value
+        masked_embeddings = token_embeddings * input_mask_expanded
+        masked_embeddings[masked_embeddings == 0] = 1e9
+
+        # Compute the min across the sequence length dimension
+        min_pooled = torch.min(masked_embeddings, dim=1)[0]
+        return min_pooled
 
 
 model = AllMpnetBaseV2()
